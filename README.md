@@ -1,6 +1,7 @@
 ### Text compression using Huffman coding!
 
 [Here is a neat video explaining it!](https://www.youtube.com/watch?v=JsTptu56GM8)
+
 [Wikipedia article](https://en.wikipedia.org/wiki/Huffman_coding)
 
 ### Usage
