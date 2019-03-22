@@ -1,4 +1,5 @@
 const fs = require("file-system");
+const START_TIME = Date.now();
 var nodes = [];
 var locations = {
     text: "text.txt",
@@ -19,7 +20,6 @@ class Node {
     }
 
     addChildren(children) {
-        children = typeof children == "Array" ? children : [children];
         for (var child of children){
             child.parent = this.id;
             this.children.push(child);
@@ -64,6 +64,10 @@ if (locations.tree == "" || compress) {
     generate_tree();
 }
 
+if(compress){
+    compressText();
+}
+
 
 
 /* Generates a huffman-tree from text */
@@ -85,18 +89,66 @@ function generate_tree() {
     while (nodes.length > 1) {
         for (i = 0; i < nodes.length - 1; i += 2) {
             var node = new ConnectorNode(nodes[i].frequency + nodes[i + 1].frequency); // Create the new parent
-                node.addChildren(JSON.parse(JSON.stringify([nodes[i], nodes[i+1]])))
-                node.children[0].parent = "    A       A      A       "
+                node.addChildren([nodes[i], nodes[i+1]]);
             
-            nodes.push(node); // Add the nodes into the list
-            console.log(nodes[nodes.length-1].children);
+            nodes.push(JSON.parse(JSON.stringify(node))); // Add the nodes into the list
             nodes.splice(i, 2); // Delete the two added nodes
         }
         sort(); // Maybe doesn't do anything?
     }
+
+    // Assign parents
+    //exploreChildren(nodes[0]);
+
     save();
-    console.log(JSON.stringify(nodes));
-    console.log("Generated tree.");
+    console.log("Generated tree in " + (Date.now()-START_TIME) + "ms");
+}
+
+function getNodeFromValue(value){
+    exploreChildren(nodes[0]);
+    var found;
+    function exploreChildren(parent){
+        for(var child of parent.children){
+            if(child.value == value) found = child;
+            else if(child.children){
+                exploreChildren(child);
+            }
+        }
+    }
+    return found;
+}
+
+function getNodeFromID(id){
+    if(nodes[0].id == id) return nodes[0];
+    exploreChildren(nodes[0]);
+    var found;
+    function exploreChildren(parent){
+        for(var child of parent.children){
+            if(child.id == id) found = child;
+            else if(child.children){
+                exploreChildren(child);
+            }
+        }
+    }
+    return found;
+}
+
+function getPathOut(value){
+    var path = "";
+    var node = getNodeFromValue(value);
+    var pastID = node.id;
+    var out = false;
+    while(!out){
+        if(node.parent){
+            pastID = node.id;
+            node = getNodeFromID(node.parent);
+            console.log(node)
+            path += (node.children[0].id == pastID) ? "1" : "0";
+        } else {
+            out = true;
+        }
+    }
+    return path;
 }
 
 function sort() {
@@ -107,14 +159,16 @@ function sort() {
 }
 
 function save() {
-    fs.writeFile(locations.tree == "" ? "tree.json" : locations.tree, JSON.stringify(nodes));
+    fs.writeFileSync(locations.tree == "" ? "tree.json" : locations.tree, JSON.stringify(nodes));
 }
 
-function compress(){
+function compressText(){
     for(i = 0; i < text.length; i++){
-
+        stream += getPathOut(text[i]);
     }
+    fs.writeFileSync("compressed_" + locations.out, stream);
 }
+
 
 function help() {
     console.log(` 
